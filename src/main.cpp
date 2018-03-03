@@ -34,6 +34,7 @@ int main()
 		std::cout<<std::endl;
 	}
 	fp.close();
+	delete[] a.data;
 	return 0;
 }
 
