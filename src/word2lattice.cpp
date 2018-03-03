@@ -7,7 +7,27 @@
 
 #include "word2lattice.h"
 
-lattice_struct add_lattice_struct(const lattice_struct& ls1, const lattice_struct& ls2)
+lattice_struct statement_to_lattice(char* statement)
+{
+	fstream fp("./HZK16",fp.binary|fp.in);
+	if(!fp.is_open())
+	{
+			std::cerr<<"无法打开字库"<<std::endl;
+			return lattice_struct{NULL, 0, 0,};
+	}
+	return word2lattice(statement, fp);
+}
+
+void draw_lattice(lattice_struct& ls)
+{
+	for(unsigned i=0;i<ls.rows;i++)
+	{
+		for(unsigned j=0;j<ls.columns;j++)
+				std::cout<<get_pixel(i, j, ls);
+		std::cout<<std::endl;
+	}
+}
+lattice_struct add_lattice_struct(lattice_struct& ls1, lattice_struct&& ls2)
 {
 	//水平方向相加，如果垂直方向不一样大，则按照大的来
 	/*计算需要多少空间，然后分配给他（记得释放）*/
@@ -24,6 +44,8 @@ lattice_struct add_lattice_struct(const lattice_struct& ls1, const lattice_struc
 		memmove(pt+prefix * totalcolumns, ls1.data+prefix*ls1.columns, ls1.columns);
 		memmove(pt+prefix * totalcolumns+ls1.columns, ls2.data+prefix*ls2.columns, ls2.columns);
 	}
+	delete[] ls1.data;ls1.data=NULL;
+	delete[] ls2.data;ls2.data=NULL;
 	return lattice_struct{
 		.data = pt, .rows=totalrows, .columns=totalcolumns
 	};
@@ -34,7 +56,7 @@ uint8_t* line2column(uint8_t* zone)
 {
 	//输入8*8个逐行式数据区域，然后转换为八个逐列式数据
 	//输入是逆序的，输出也是逆序的！
-	uint8_t* result = new uint8_t[8];
+	uint8_t* result = new uint8_t[8]{0};
 	for(size_t i=0;i<8;i++)
 		//八个数据
 		for(size_t j=0;j<8;j++)
@@ -48,7 +70,7 @@ uint8_t* line2column(uint8_t* zone)
 lattice_struct word2lattice(char* word, fstream& fp)
 {
 	char* ptr = word;
-	lattice_struct ls{ // @suppress("Type cannot be resolved") // @suppress("Statement has no effect")
+	lattice_struct ls{
 		.data = NULL,
 		.rows = 0,
 		.columns = 0
@@ -80,7 +102,6 @@ lattice_struct word2lattice(char* word, fstream& fp)
 				delete[] result;
 			}
 			ls = add_lattice_struct(ls, lattice_struct{.data=lpt,.rows=16,.columns=16});
-			delete[] lpt, lpt=NULL;
 		}
 		else
 		{
@@ -90,13 +111,13 @@ lattice_struct word2lattice(char* word, fstream& fp)
 			for(int i =0;i<16;i++)
 				map[i] = ascii_map[i];
 			ls = add_lattice_struct(ls, lattice_struct{.data=map,.rows=16,.columns=8});
-			delete[] map;map=NULL;
 		}
 	}
+	fp.close();
 	return ls;
 }
 
-string get_pixel(int row, int column, const lattice_struct& ls)
+inline string get_pixel(int row, int column, const lattice_struct& ls)
 {
 	auto baserow = row/8;
 	auto basecolumn = column;
@@ -106,5 +127,6 @@ string get_pixel(int row, int column, const lattice_struct& ls)
 	uint8_t mask = 0x01;
 	for(int i=0;i<bias;i++)
 		mask<<=1;
-	return byte&mask?"● ":"○ ";
+	bool flag = byte&mask;
+	return flag?"● ":"○ ";
 }
