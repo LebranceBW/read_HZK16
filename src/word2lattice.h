@@ -23,14 +23,17 @@ using std::fstream;
 using std::memmove;
 using uint8_t = unsigned char;
 
-typedef struct
+extern "C"
 {
-	uint8_t* data;//列式点阵数据 //
-	unsigned int rows;//多少行
-	unsigned int columns;//多少列
-}lattice_struct;
-extern lattice_struct statement_to_lattice(char* statement);
-extern string get_pixel(int row, int column, const lattice_struct& ls);
-extern lattice_struct word2lattice(char* word, fstream& fp);
-extern void draw_lattice(lattice_struct& ls);
+	typedef struct
+	{
+		uint8_t* data;//列式点阵数据 //
+		unsigned int rows;//多少行
+		unsigned int columns;//多少列
+	} lattice_struct, *lattice_str_ptr;
+	extern lattice_str_ptr statement_to_lattice(char* statement);
+	extern string get_pixel(int row, int column, const lattice_struct& ls);
+	extern lattice_struct word2lattice(char* word, fstream& fp);
+	extern void draw_lattice(const lattice_str_ptr ls);
+}
 #endif /* SRC_WORD2LATTICE_H_ */

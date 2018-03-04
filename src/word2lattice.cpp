@@ -7,26 +7,31 @@
 
 #include "word2lattice.h"
 
-lattice_struct statement_to_lattice(char* statement)
+extern "C"
+lattice_str_ptr statement_to_lattice(char* statement)
 {
+	std::cout<<"开始转换..."<<std::endl;
 	fstream fp("./HZK16",fp.binary|fp.in);
 	if(!fp.is_open())
 	{
-			std::cerr<<"无法打开字库"<<std::endl;
-			return lattice_struct{NULL, 0, 0,};
+			std::cout<<"无法打开字库"<<std::endl;
+			return NULL;
 	}
-	return word2lattice(statement, fp);
+	lattice_str_ptr result = new lattice_struct(word2lattice(statement, fp));
+	return result;
 }
 
-void draw_lattice(lattice_struct& ls)
+extern "C"
+void draw_lattice(const lattice_str_ptr ls)
 {
-	for(unsigned i=0;i<ls.rows;i++)
+	for(unsigned i=0;i<ls->rows;i++)
 	{
-		for(unsigned j=0;j<ls.columns;j++)
-				std::cout<<get_pixel(i, j, ls);
+		for(unsigned j=0;j<ls->columns;j++)
+				std::cout<<get_pixel(i, j, *ls);
 		std::cout<<std::endl;
 	}
 }
+extern "C"
 lattice_struct add_lattice_struct(lattice_struct& ls1, lattice_struct&& ls2)
 {
 	//水平方向相加，如果垂直方向不一样大，则按照大的来
@@ -52,6 +57,7 @@ lattice_struct add_lattice_struct(lattice_struct& ls1, lattice_struct&& ls2)
 
 }
 
+extern "C"
 uint8_t* line2column(uint8_t* zone)
 {
 	//输入8*8个逐行式数据区域，然后转换为八个逐列式数据
@@ -67,9 +73,10 @@ uint8_t* line2column(uint8_t* zone)
 		}
 	return result;
 }
+extern "C"
 lattice_struct word2lattice(char* word, fstream& fp)
 {
-	char* ptr = word;
+	auto ptr = word;
 	lattice_struct ls{
 		.data = NULL,
 		.rows = 0,
@@ -77,7 +84,7 @@ lattice_struct word2lattice(char* word, fstream& fp)
 	};
 	while(*ptr)
 	{
-		if(uint8_t(*ptr) > 127)
+		if((uint8_t)*ptr > 127)
 		{
 			//是汉字
 			auto code_region = uint8_t(*ptr++);
@@ -87,7 +94,6 @@ lattice_struct word2lattice(char* word, fstream& fp)
 			fp.seekg(offset);
 			fp.read(lattice_byline, 32);
 			auto lpt = new uint8_t[32];
-
 			//将其划分为四个区域I II III IV 每个区域都是8X8，然后将各个区域内容转换后拷贝
 			for(int zone=0;zone!=4;zone++)
 			{
@@ -106,7 +112,7 @@ lattice_struct word2lattice(char* word, fstream& fp)
 		else
 		{
 			//是ascii码
-			const unsigned char* ascii_map = F8X16[uint8_t(*ptr++ - ' ')];
+			const unsigned char* ascii_map = F8X16[(*ptr++) - ' '];
 			unsigned char* map = new uint8_t[16];
 			for(int i =0;i<16;i++)
 				map[i] = ascii_map[i];
